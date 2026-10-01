@@ -712,7 +712,7 @@ function reactionPrompt(atk,vic,k){
 function bombResume(){const b=S.bomb;if(!b)return;clearInterval(tm);
  tm=setInterval(()=>{if(!S.bomb||S.over){clearInterval(tm);return}b.t--;const e=$('bt');if(e){e.textContent=b.t;e.classList.toggle('urg',b.t<=5)}bombTick(b);sfx('tick',b.t);if(b.p==0)$('tmB').textContent='💣 '+b.t+'s';if(b.t<=0){clearInterval(tm);bombTimeout()}},1000)}
 async function play(p,ci,tgv,ix,triple){S.busy=(S.busy||0)+1;const wasBomb=!!(S.bomb&&S.bomb.p==p);if(wasBomb)clearInterval(tm);
- try{return await play0(p,ci,tgv,ix,triple)}finally{S.busy--;if(wasBomb&&S.bomb&&S.bomb.p==p)bombResume()}}
+ try{return await play0(p,ci,tgv,ix,triple)}finally{S.busy--;if(wasBomb&&S.bomb&&S.bomb.p==p)bombResume();if(S&&!S.over)render()}}
 async function play0(p,ci,tgv,ix,triple){const player=p,src=srcRect(p,ci);const h=S.H[p],k=h[ci].k,u=[h.splice(ci,1)[0]];
  if(CO.includes(k))for(let n=triple?2:1;n--;)u.push(h.splice(h.findIndex(x=>x.k==k),1)[0]);S.disc.push(...u);
  const hid=HID.includes(k),kk=DISG[k]??k;
@@ -732,23 +732,26 @@ async function play0(p,ci,tgv,ix,triple){const player=p,src=srcRect(p,ci);const 
   if(hv(32)&&await MP.react(q,`⚠ ${NM[atk]} đánh ${N[kk]}${tg?' nhắm vào bạn':''} — dùng Mìn Xịt?`,Math.random()<(tg?.6:atk==0?.2:.08))){removeCard(q,32);log(`🚫 ${NM[q]} dùng Mìn Xịt! hủy ${N[kk]} của ${NM[atk]}`);speak(q,'🚫 Mìn Xịt!','#ff4d4d');nopeFX(q);showFX('🚫',`${NM[q]} hủy lá ${N[kk]}!`,'#ff4d4d',1200);render();return}
   if(tg&&p==atk&&hv(33)&&await MP.react(q,`${NM[atk]} nhắm ${N[kk]} vào bạn — dùng Phản Pháo?`,Math.random()<.5)){removeCard(q,33);log(`🪞 ${NM[q]} Phản Pháo — đòn dội ngược về ${NM[atk]}!`);speak(q,'🪞 Phản Pháo!','#c46bd6');reflFX(q,atk);showFX('🪞',`${NM[q]} dội ngược đòn!`,'#c46bd6',1200);[p,tgv]=[q,atk];ix=undefined;break}}
  if(p==0&&DISG[k])txt(AVP(0),'🎭 Lá giả — chỉ mình bạn biết','#c9a7ff');await cardFX(kk,p,tgv);await applyEffect(k,p,tgv,ix);render()}
+const idle=async g=>{while(S&&S.busy&&g==gen&&!S.over)await z(80)};
 function bot(p){const g=++gen;(async()=>{await z(900);
- for(let i=0;i<3;i++){if(g!=gen||S.over||S.cur!=p)return;
+ for(let i=0;i<3;i++){await idle(g);if(g!=gen||S.over||S.cur!=p)return;
   const o=S.H[p].map((c,ix)=>ok(p,c)?ix:-1).filter(x=>x>=0);if(!o.length)break;
   let pool=o;
   if(S.needAtk){const def=o.filter(ix=>[4,6,7].includes(S.H[p][ix].k));if(def.length&&Math.random()<.75)pool=def;else if(Math.random()<.4)break}
   else if(Math.random()<.45)break;
   const pick=pool[R(pool.length)];
-  const ts=S.al.map((v,q)=>v&&q!=p?q:-1).filter(q=>q>=0);const k=S.H[p][pick].k;
+  const ts=S.al.map((v,q)=>v&&q!=p?q:-1).filter(q=>q>=0);const k=S.H[p][pick].k,card=S.H[p][pick];await idle(g);if(g!=gen||S.over||S.cur!=p)return;if(S.H[p][pick]!==card||!ok(p,card))continue;
   await play(p,pick,IM[k]&&IM[k][1]?ts[R(ts.length)]:null);if(g!=gen||S.over||S.cur!=p)return;await z(800)}
- while(g==gen&&!S.over&&S.cur==p){draw(p,0,1);render();if(afterDraw(p))return;await z(600)}})()}
+ while(g==gen&&!S.over&&S.cur==p){await idle(g);if(g!=gen||S.over||S.cur!=p)return;draw(p,0,1);render();if(afterDraw(p))return;await z(600)}})()}
 function cl(i){if(PKM&&PKM.t=='h'){const cb=PKM.cb;pkEnd();cb(i);return}if(PKM)return;if(!S.over){sel=sel==i?-1:i;render()}}
 function autoDraw(){if(S.cur!=0||S.over||S.bomb)return;if(PKM)pkEnd();sel=-1;let g=20;while(g--&&S.cur==0&&!S.over&&!S.bomb){draw(0,0,1);if(afterDraw(0))return}render()}
 function doDraw(){if(S.cur!=0||S.over||S.bomb)return;if(PKM)pkEnd();sel=-1;draw(0,0,1);if(!afterDraw(0))render()}
 function hint(){if(S.cur!=0||S.over)return;const i=S.H[0].findIndex(c=>ok(0,c));
  render();const el=$('hd').children[i];if(i<0||!el){$('dr').classList.add('hint');setTimeout(()=>$('dr').classList.remove('hint'),1200);return}
  el.classList.add('hint');setTimeout(()=>el.classList.remove('hint'),1400)}
-function doPlay(){const c=S.H[0][sel],i=sel;if(!c||S.over||!ok(0,c)||(S.busy&&!(S.bomb&&S.bomb.p==0))||(S.cur!=0&&!ANY.includes(c.k)&&!(S.bomb&&S.bomb.p==0)))return;sel=-1;
+function doPlay(){const c=S.H[0][sel],i=sel;
+ if(c&&!S.over&&ANY.includes(c.k)&&ok(0,c)&&S.busy&&!(S.bomb&&S.bomb.p==0)){sel=-1;render();(async()=>{let g=150;while(S&&S.busy&&g--)await z(60);if(!S||S.over)return;const j=S.H[0].indexOf(c);if(j<0||!ok(0,c))return;sel=j;doPlay()})();return}
+ if(!c||S.over||!ok(0,c)||(S.busy&&!(S.bomb&&S.bomb.p==0))||(S.cur!=0&&!ANY.includes(c.k)&&!(S.bomb&&S.bomb.p==0)))return;sel=-1;
  if(!IM[c.k][1])return play(0,i);
  const o=S.al.map((v,q)=>v&&q>0?q:-1).filter(q=>q>0),cancel=()=>render();if(c.k==6||c.k==7)o.unshift(0);
  const go=tr=>pickTarget(o,q=>{
@@ -786,7 +789,7 @@ function render(){if(!S)return;
  if(c)$('desc').innerHTML=`<span style="color:${COLORS[c.k]}">●</span> `+DESC(c.k)+(c.k==1?` (còn ${c.f} lượt)`:'')+(ANY.includes(c.k)?' <b style="color:#7dffb0">⚡ Đánh bất cứ lúc nào</b>':[32,33].includes(c.k)?' <b style="color:#7dffb0">⚡ Đánh bất cứ lúc nào — hiện ra khi có người nhắm vào bạn</b>':(my?'':' <b style="color:#ffb98a">⏳ Chỉ đánh được vào lượt của bạn</b>'));
  else if(my&&S.needAtk)$('desc').innerHTML=`⚔️ <b style="color:#ff8a7a">Bạn phải rút ${S.need} lá!</b> Được đánh bất kỳ lá nào để tìm cách thoát (Sơ Tán để né, dò bài, cộng dồn đẩy đi…) hoặc bấm RÚT.`;
  else $('desc').textContent=my?'Chọn 1 lá để xem công năng, hoặc bấm GỢI Ý':'Đang chờ đối thủ...';
- $('pl').disabled=!(c&&!S.over&&ok(0,c)&&(!S.busy||(S.bomb&&S.bomb.p==0))&&(my||ANY.includes(c.k)||(S.bomb&&S.bomb.p==0)));$('dr').disabled=!my;$('dr2').classList.toggle('glow',my);if(!my)$('tmB').textContent='';
+ $('pl').disabled=!(c&&!S.over&&ok(0,c)&&(!S.busy||(S.bomb&&S.bomb.p==0)||ANY.includes(c.k))&&(my||ANY.includes(c.k)||(S.bomb&&S.bomb.p==0)));$('dr').disabled=!my;$('dr2').classList.toggle('glow',my);if(!my)$('tmB').textContent='';
  $('dr').textContent=(my&&S.needAtk)?`RÚT ${S.need} LÁ`:'BỎ LƯỢT';if(PKM)$('desc').innerHTML=PKM.msg;else if(S.bomb&&S.bomb.p==0&&!S.H[0][sel])$('desc').innerHTML='💣 <b style="color:#ff8a7a">Đánh bài để tự cứu mình!</b>';if(S.bomb){$('dr').disabled=true;$('dr2').classList.remove('glow')};$('pkx').style.display=PKM&&PKM.cancel?'block':'none';$('pl').disabled=$('pl').disabled||!!PKM;if(document.body.classList.contains('mob')&&!S.H[0][sel]&&!PKM&&!(S.bomb&&S.bomb.p==0)&&!(my&&S.needAtk))$('desc').textContent=''}
 let VW=innerWidth,VH=innerHeight,vvT=0;
 function setVV(){const vv=window.visualViewport;VW=vv?vv.width:innerWidth;VH=vv?vv.height:innerHeight;document.documentElement.style.setProperty('--vh',VH+'px')}
@@ -1020,6 +1023,19 @@ const MP={on:false,rem:[],pend:{},aid:0,tm:0,ended:0,
   this.rem.forEach((c,i)=>{if(c&&c.open)c.send({t:'snap',seat:i,NM:NM.slice(0,cfg.n),al:S.al,cnt:S.H.map(h=>h.length),cur:S.cur,dir:S.dir,need:S.need,atk:S.needAtk,deck:S.deck.length,round:S.round,hand:S.H[i].map(c=>({k:c.k,f:c.f})),mines:S.H.map(h=>h.filter(c=>c.k==1).map(c=>c.f)),last:S.last,over:S.over,lock:S.lock,sh:S.sh[i],tr:S.tr[i],link:S.link?[S.link[0],S.link[1],S.link[2]]:null,ban:S.ban?[S.ban[0],S.ban[1]]:null,bomb:S.bomb?{p:S.bomb.p,t:S.bomb.t}:null})});
   if(S.over&&!this.ended){this.ended=1;const w=S.al.findIndex(Boolean);this.rem.forEach(c=>c&&c.open&&c.send({t:'end',w:w>=0?NM[w]:''}))}},90)}};
 setInterval(()=>{if(MP.on&&S&&S.bomb)MP.sync()},1000);
+/* lá MỌI LÚC của người chơi từ xa: chủ phòng kiểm tra hợp lệ rồi tự đánh thay họ */
+MP.aq=[];
+MP.any=async function(c,m){const s=this.rem.indexOf(c);
+ if(s<1||!S||S.over||!S.al[s]||!m||!ANY.includes(m.k)||this.aq[s])return;
+ this.aq[s]=1;
+ try{
+  let g=400;while(S&&S.busy&&g--)await z(50);              /* chờ lá đang xử lý xong */
+  if(!S||S.over||!S.al[s]||S.cur==s)return;                /* đến lượt họ thì dùng menu lượt */
+  if(Object.values(this.pend).some(x=>x.p==s))return;      /* đang có menu chọn theo vị trí bài: không đổi tay bài */
+  const i=S.H[s].findIndex(x=>x.k==m.k);
+  if(i<0||!ok(s,S.H[s][i]))return;
+  await play(s,i,null)
+ }catch(e){}finally{this.aq[s]=0}};
 {const _l=log;log=function(t){_l(t);MP.pub(t)};const _r=render;render=function(){_r.apply(this,arguments);MP.sync()}}
 async function remoteTurn(q){const g=++gen,ok2=()=>S.cur==q&&!S.bomb&&!S.over,dead=()=>g!=gen||S.over||S.cur!=q;
  for(let n=0;n<10;n++){if(dead()||S.bomb)return;if(!MP.rem[q]){bot(q);return}
@@ -1046,7 +1062,7 @@ const MPN={role:null,peer:null,conns:[],hc:null,q:[],
  err(e){const m=$('lmsg');if(!m)return;m.textContent=e&&e.type=='peer-unavailable'?'⚠ Không tìm thấy phòng.':'⚠ Lỗi mạng: '+((e&&e.type)||e);if(e&&e.type=='peer-unavailable'){RM=null;show('lobby')}},
  host(code){if(typeof Peer=='undefined'){$('lmsg').textContent='⚠ Cần internet để chơi online';return}this.role='host';
   const p=this.peer=new Peer('c4bom-'+code);
-  p.on('connection',c=>{this.conns.push(c);c.on('data',m=>{if(!m||typeof m!='object')return;if(m.t=='join')c.pid=m.from;if(m.t=='ans'){MP.ans(c,m);return}Net.h.msg&&Net.h.msg(m)});
+  p.on('connection',c=>{this.conns.push(c);c.on('data',m=>{if(!m||typeof m!='object')return;if(m.t=='join')c.pid=m.from;if(m.t=='ans'){MP.ans(c,m);return}if(m.t=='any'){MP.any(c,m);return}Net.h.msg&&Net.h.msg(m)});
    c.on('close',()=>{this.conns=this.conns.filter(x=>x!==c);if(c.pid&&RM&&RM.host)Net.h.msg({t:'leave',code:RM.code,from:c.pid});const s=MP.rem.indexOf(c);if(s>0){MP.rem[s]=null;MP.drop(s);if(S&&S.cur==s&&!S.over&&!S.bomb)bot(s)}})});
   p.on('error',e=>{if(e.type=='unavailable-id'){leaveRoom();createRoom()}else this.err(e)})},
  join(code){MPG.code=code;if(typeof Peer=='undefined'){$('lmsg').textContent='⚠ Cần internet để chơi online';return}
@@ -1105,7 +1121,8 @@ const MPG={active:false,cur:null,seat:0,n:0,iv:0,ended:0,logs:[],AV0:null,lastCu
  clr(){clearInterval(this.iv);const m=this.cur;this.cur=null;$('tmB').textContent='';if(m&&!this.isTurn(m)&&!this.ended)mc();S&&render()}};
 {const _d=doDraw,_p=doPlay,_h=home;
  doDraw=function(){if(!MPG.active)return _d();const m=MPG.cur;if(!MPG.isTurn(m))return;sel=-1;MPG.ans(m.opts.findIndex(o=>o.v=='d'))};
- doPlay=function(){if(!MPG.active)return _p();const m=MPG.cur,c=S&&S.H[0][sel];if(!c||!MPG.isTurn(m))return;
+ doPlay=function(){if(!MPG.active)return _p();const m=MPG.cur,c=S&&S.H[0][sel];if(!c)return;
+  if(!MPG.isTurn(m)){if(!m&&!S.over&&S.cur!=0&&ANY.includes(c.k)&&ok(0,c)&&MPN.hc&&MPN.hc.open){sel=-1;MPN.hc.send({t:'any',k:c.k});render()}return}
   const o=m.opts.find(o=>o.v===sel)||m.opts.find(o=>o.v!='d'&&S.H[0][o.v]&&S.H[0][o.v].k==c.k);if(!o)return;sel=-1;MPG.ans(m.opts.indexOf(o))};
  home=function(){if(MPG.active){location.reload();return}_h()}}
 </script>
