@@ -371,7 +371,7 @@ body.lite #game::before,body.lite #dirRing,body.lite .gr,body.lite .logo,body.li
   <button class="mb" onclick="toBot()"><b>🤖 CHƠI VỚI BOT</b><small>Luyện tập một mình, tự chọn số bot</small></button>
   <button class="mb" onclick="createRoom()"><b>🏠 TẠO PHÒNG</b><small>Nhận mã 6 số để mời bạn bè</small></button>
   <div class="mb join"><b>🔑 THAM GIA PHÒNG</b><small>Nhập mã số phòng của bạn bè</small><div class="jr"><input id="jcode" inputmode="numeric" maxlength="6" placeholder="000000" onkeydown="if(event.key=='Enter')joinRoom()"><button class="bt" onclick="joinRoom()">VÀO</button></div></div>
- </div><p id="lmsg"></p></div><div class="fanc" id="fanc"></div></div>
+ </div><p id="lmsg"></p><p id="ver" style="margin:10px 0 0;font-size:11px;opacity:.65;text-align:center">Phiên bản: 2026-10-01 · giao diện điện thoại v5</p></div><div class="fanc" id="fanc"></div></div>
 <div id="room"><div class="rp">
  <h2>🏠 MÃ PHÒNG</h2><div id="rcode"></div>
  <div class="rw"><button class="bt g" onclick="navigator.clipboard&&navigator.clipboard.writeText(RM.code).catch(()=>{});this.textContent='✔ Đã chép'">📋 Chép mã</button></div>
@@ -987,7 +987,8 @@ function bombTick(b){const e=$('bombc');if(e){e.dataset.s=Math.min(4,Math.floor(
 menu();
 show('lobby');
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
- addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})});
+ addEventListener('load',()=>{navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})});
+ navigator.serviceWorker.addEventListener('controllerchange',()=>{if(sessionStorage.getItem('swr'))return;sessionStorage.setItem('swr','1');location.reload()});
 }
 </script><script>
 (function(){const b=document.body;
